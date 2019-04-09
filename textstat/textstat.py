@@ -12,7 +12,9 @@ from collections import Counter
 import pkg_resources
 import repoze.lru
 from pyphen import Pyphen
+from . import config
 
+CACHE_SIZE = config.CACHE_SIZE
 
 easy_word_set = set([
     ln.decode('utf-8').strip() for ln in
@@ -36,8 +38,7 @@ def get_grade_suffix(grade):
 
 class textstatistics:
     text_encoding = "utf-8"
-
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def char_count(self, text, ignore_spaces=True):
         """
         Function to return total character counts in a text,
@@ -48,7 +49,7 @@ class textstatistics:
             text = text.replace(" ", "")
         return len(text)
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def letter_count(self, text, ignore_spaces=True):
         """
         Function to return total letter amount in a text,
@@ -63,7 +64,7 @@ class textstatistics:
     def remove_punctuation(text):
         return ''.join(ch for ch in text if ch not in string.punctuation)
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def lexicon_count(self, text, removepunct=True):
         """
         Function to return total lexicon (words in lay terms) counts in a text
@@ -73,7 +74,7 @@ class textstatistics:
         count = len(text.split())
         return count
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def syllable_count(self, text, lang='en_US'):
         """
         Function to calculate syllable words in a text.
@@ -96,7 +97,7 @@ class textstatistics:
             count += max(1, word_hyphenated.count("-") + 1)
         return count
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def sentence_count(self, text):
         """
         Sentence count of a text
@@ -108,7 +109,7 @@ class textstatistics:
                 ignore_count += 1
         return max(1, len(sentences) - ignore_count)
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def avg_sentence_length(self, text):
         try:
             asl = float(self.lexicon_count(text) / self.sentence_count(text))
@@ -116,7 +117,7 @@ class textstatistics:
         except ZeroDivisionError:
             return 0.0
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def avg_syllables_per_word(self, text):
         syllable = self.syllable_count(text)
         words = self.lexicon_count(text)
@@ -126,7 +127,7 @@ class textstatistics:
         except ZeroDivisionError:
             return 0.0
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def avg_character_per_word(self, text):
         try:
             letters_per_word = float(
@@ -135,7 +136,7 @@ class textstatistics:
         except ZeroDivisionError:
             return 0.0
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def avg_letter_per_word(self, text):
         try:
             letters_per_word = float(
@@ -144,7 +145,7 @@ class textstatistics:
         except ZeroDivisionError:
             return 0.0
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def avg_sentence_per_word(self, text):
         try:
             sentence_per_word = float(
@@ -153,7 +154,7 @@ class textstatistics:
         except ZeroDivisionError:
             return 0.0
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def flesch_reading_ease(self, text):
         sentence_length = self.avg_sentence_length(text)
         syllables_per_word = self.avg_syllables_per_word(text)
@@ -164,7 +165,7 @@ class textstatistics:
         )
         return legacy_round(flesch, 2)
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def flesch_kincaid_grade(self, text):
         sentence_lenth = self.avg_sentence_length(text)
         syllables_per_word = self.avg_syllables_per_word(text)
@@ -174,7 +175,7 @@ class textstatistics:
             - 15.59)
         return legacy_round(flesch, 1)
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def polysyllabcount(self, text):
         count = 0
         for word in text.split():
@@ -183,7 +184,7 @@ class textstatistics:
                 count += 1
         return count
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def smog_index(self, text):
         sentences = self.sentence_count(text)
 
@@ -199,14 +200,14 @@ class textstatistics:
         else:
             return 0.0
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def coleman_liau_index(self, text):
         letters = legacy_round(self.avg_letter_per_word(text)*100, 2)
         sentences = legacy_round(self.avg_sentence_per_word(text)*100, 2)
         coleman = float((0.058 * letters) - (0.296 * sentences) - 15.8)
         return legacy_round(coleman, 2)
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def automated_readability_index(self, text):
         chrs = self.char_count(text)
         words = self.lexicon_count(text)
@@ -222,7 +223,7 @@ class textstatistics:
         except ZeroDivisionError:
             return 0.0
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def linsear_write_formula(self, text):
         easy_word = 0
         difficult_word = 0
@@ -245,7 +246,7 @@ class textstatistics:
 
         return number / 2
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def difficult_words(self, text, syllable_threshold=2):
         text_list = re.findall(r"[\w\='‘’]+", text.lower())
         diff_words_set = set()
@@ -255,7 +256,7 @@ class textstatistics:
                     diff_words_set.add(value)
         return len(diff_words_set)
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def dale_chall_readability_score(self, text):
         word_count = self.lexicon_count(text)
         count = word_count - self.difficult_words(text)
@@ -275,7 +276,7 @@ class textstatistics:
             score += 3.6365
         return legacy_round(score, 2)
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def gunning_fog(self, text):
         try:
             per_diff_words = (
@@ -287,7 +288,7 @@ class textstatistics:
         except ZeroDivisionError:
             return 0.0
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def lix(self, text):
         words = text.split()
 
@@ -300,7 +301,7 @@ class textstatistics:
 
         return legacy_round(lix, 2)
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def rix(self, text):
         """
         A Rix ratio is simply the number of long words divided by
@@ -318,7 +319,7 @@ class textstatistics:
 
         return legacy_round(rix, 2)
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def spache_readability(self, text, float_output=True):
         """
         Function to calculate SPACHE readability formula for young readers.
@@ -335,7 +336,7 @@ class textstatistics:
         else:
             return spache
 
-    @repoze.lru.lru_cache(maxsize=128)
+    @repoze.lru.lru_cache(maxsize=CACHE_SIZE)
     def text_standard(self, text, float_output=None):
 
         grade = []
